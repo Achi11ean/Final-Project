@@ -2,21 +2,20 @@ from .. import CURSOR, CONN
 
 class Attendee:
     #This Class represents an Attendee and manages the DB interactions for the attendees table
-    #Each attendee is linked to an event through event_id (foreign key = Fez)
+
 
     #This is a dictionary to keep track of all attendee objects in memory
     all = {}
-    #initialize an Attendee object with name, email, event_id, and an optional id 
+    #initialize an Attendee object with name, email, and an optional id 
     #If  the object is new Id is None and is automatically generated when saving to the DB
-    def __init__(self, name, email, event_id, id=None):
+    def __init__(self, name, email, id=None):
         self.id = id
         self.name = name
         self.email = email
-        self.event_id = event_id
             
     #String Representation of the attendee object.
     def __repr__(self):
-        return f"<Attendee {self.id}: {self.name}, {self.email}, Event ID: {self.event_id}>"
+        return f"<Attendee {self.id}: {self.name}, {self.email}>"
 
     #Property Methods for name, email, event_ id with validationssss 
     #Getter for the attendee's name
@@ -45,27 +44,22 @@ class Attendee:
         else:
             raise ValueError("Please Enter a valid email")
 
-    #getter for the attendee's event_id (Fez)
-    @property
-    def event_id(self):
-        return self._event_id
-    @event_id.setter
-    def event_id(self, event_id):
-        #setter for the attendees event_id. verifying it is an integer
-        if isinstance(event_id, int):
-            self._event_id = event_id
-        else:
-            raise ValueError("Event ID Must be an integer")
     @classmethod
     def create_table(cls):
-        # Create the attendee's table if it doesn't already exist.
         CURSOR.execute('''
             CREATE TABLE IF NOT EXISTS attendees (
                 id INTEGER PRIMARY KEY,
                 name TEXT,
-                email TEXT,
+                email TEXT
+            )
+        ''')
+        CURSOR.execute('''
+            CREATE TABLE IF NOT EXISTS attendee_events (
+                attendee_id INTEGER,
                 event_id INTEGER,
-                FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+                FOREIGN KEY (attendee_id) REFERENCES attendees(id) ON DELETE CASCADE,
+                FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+                PRIMARY KEY (attendee_id, event_id)
             )
         ''')
         CONN.commit()
@@ -79,9 +73,9 @@ class Attendee:
         if self.id == None:
             #insert a new row into the attendee's table
             CURSOR.execute('''
-                INSERT INTO attendees(name, email, event_id)
-                VALUES (?, ?, ?)
-            ''', (self.name, self.email, self.event_id))
+                INSERT INTO attendees(name, email)
+                VALUES (?, ?)
+            ''', (self.name, self.email))
             CONN.commit()
             #set the id of the object to the last inserted row's id
             self.id = CURSOR.lastrowid
@@ -90,14 +84,16 @@ class Attendee:
             #update the existing row with new values
             CURSOR.execute('''
                 UPDATE attendees
-                SET name = ?, email = ?, event_id = ?
+                SET name = ?, email = ?
                 WHERE id = ?
-            ''', (self.name, self.email, self.event_id))
+            ''', (self.name, self.email, self.id))
             CONN.commit()
+        type(self).all[self.id] = self
+
     @classmethod
-    def create(cls, name, email, event_id):
+    def create(cls, name, email):
         #factory method to create a new attendee object and save it to the DB
-        attendee = cls(name, email, event_id)
+        attendee = cls(name, email)
         attendee.save()
         return attendee
     def delete(self):
@@ -125,10 +121,14 @@ class Attendee:
         return None
     @classmethod
     def find_by_event_id(cls, event_id):
-        #Find all attendees for a specific event by event_id.
-        #returns list of attendee objects linked to that event
-        rows = CURSOR.execute("SELECT * FROM attendees WHERE event_id = ?", (event_id,)).fetchall()
+        # This method will retrieve attendees by event_id from the attendee_events association table
+        rows = CURSOR.execute('''
+            SELECT attendees.* FROM attendees
+            JOIN attendee_events ON attendees.id = attendee_events.attendee_id
+            WHERE attendee_events.event_id = ?
+        ''', (event_id,)).fetchall()
         return [cls.instance_from_db(row) for row in rows]
+
     @classmethod
     def instance_from_db(cls, row):
         #return an attendee object initialized from a DB row, the row is expected to contain the ID, name, email and event_id,
@@ -137,6 +137,34 @@ class Attendee:
         if attendee_id in cls.all:
             return cls.all[attendee_id]
         #create a new attendee object and add it to the in memory dictionary
-        attendee = cls(id=row[0], name=row[1], email=row[2], event_id=row[3])
+        attendee = cls(id=row[0], name=row[1], email=row[2])
         cls.all[attendee.id] = attendee
         return attendee
+    
+    def add_to_event(self, event_id):
+    # Check if the attendee is already associated with the event
+        existing_record = CURSOR.execute('''
+            SELECT * FROM attendee_events 
+            WHERE attendee_id = ? AND event_id = ?
+        ''', (self.id, event_id)).fetchone()
+
+        if existing_record:
+            raise ValueError(f"Attendee {self.name} is already added to this event.")
+    # If not already associated, insert into the attendee_events table
+        CURSOR.execute('''
+            INSERT INTO attendee_events (attendee_id, event_id)
+            VALUES (?, ?)
+        ''', (self.id, event_id))
+        CONN.commit()
+
+    @classmethod
+    def get_events_for_attendee(cls, attendee_id):
+        rows = CURSOR.execute('''
+            SELECT events.* FROM events
+            JOIN attendee_events ON events.id = attendee_events.event_id
+            WHERE attendee_events.attendee_id = ?
+        ''', (attendee_id,)).fetchall()
+        from .event import Event
+        return [Event.instance_from_db(row) for row in rows]
+
+

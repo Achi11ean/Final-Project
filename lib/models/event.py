@@ -5,16 +5,17 @@ class Event:
     #dictionary to store all event objects in memory, mapped by their ID's
     all = {}
     #Constructor to initialize an event object with name, date, location description and optional ID
-    def __init__(self, name, date, location, description, id=None):
+    def __init__(self, name, date, location, description, venue_id=None, id=None):
         self.id = id
         self.name = name
         self.date = date
         self.location = location
         self.description = description
+        self.venue_id = venue_id
     
     #String representation of the Event object for easy debugging and display
     def __repr__(self):
-        return f"<Event {self.id}: {self.name}, {self.date}, {self.location}>"
+        return f"<Event {self.id}: {self.name}, {self.date}, {self.location}, Venue: {self.venue_id}>"
     
     #property getter for the event's name
     @property
@@ -75,7 +76,9 @@ class Event:
                 name TEXT,
                 date TEXT,
                 location TEXT,
-                description TEXT
+                description TEXT,
+                venue_id Integer,
+                FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE
             )
         ''')
         """always commit changes after executing a SQL statement"""
@@ -93,17 +96,17 @@ class Event:
     def save(self):
         if self.id is None:
             CURSOR.execute('''
-                INSERT INTO events (name, date, location, description)
-                VALUES(?, ?, ?, ?)
-            ''', (self.name, self.date, self.location, self.description))
+                INSERT INTO events (name, date, location, description, venue_id)
+                VALUES(?, ?, ?, ?, ?)
+            ''', (self.name, self.date, self.location, self.description, self.venue_id))
             CONN.commit()
             self.id = CURSOR.lastrowid
         else:
             CURSOR.execute('''
                 UPDATE events
-                SET name = ?, date = ?, location = ?, description = ?
+                SET name = ?, date = ?, location = ?, description = ?, venue_id = ?
                 WHERE id = ?
-            ''', (self.name, self.date, self.location, self.description, self.id,))
+            ''', (self.name, self.date, self.location, self.description, self.venue_id, self.id,))
             CONN.commit()
         type(self).all[self.id] = self    
     #Method to delete the current event from the DB and remove it from memory
@@ -138,15 +141,16 @@ class Event:
         event_id = row[0] #event's Id From DB 
         if event_id in cls.all: #Check if the event is already loaded in memory to avoid duplication
             return cls.all[event_id]
+        venue_id = row[5] if len(row) >5 else None
         #Create a new event object from the DB row and store it in the memory 
-        event = cls(id=row[0], name=row[1], date=row[2], location=row[3], description=row[4])
+        event = cls(id=row[0], name=row[1], date=row[2], location=row[3], description=row[4], venue_id=venue_id)
         cls.all[event.id] = event
         return event
     
     #Class method to create a save a new event in the DB 
     @classmethod
-    def create(cls, name, date, location, description):
-        event = cls(name, date, location, description) #create an event object
+    def create(cls, name, date, location, description, venue_id):
+        event = cls(name, date, location, description, venue_id) #create an event object
         event.save() #save the event to the DB 
         return event #return the saved object
     
