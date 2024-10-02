@@ -41,114 +41,113 @@ after that runs and creates the database you can now open up the event planner w
 
 After installation, you can run the application by following these steps:
 
-**FEATURES Quick Overview!**
-0. Exit - Exit the program.
-1. Create a New Venue - Easily create a venue for events.
-2. Create a New Event - Provide event details like name, date, location, and description.
-3. Add Attendees - Assign attendees to specific events by providing attendee details (name and email).
-4. Add an Existing Attendee to an Event - Add an attendee who has already been created to an existing event.
-5. List All Venues - View a list of all created venues.
-6. List All Events - View a list of all created events.
-7. View Attendees for an Event - List all attendees for a specific event.
-8. Search Events by Venue - Search and list events taking place at a specific venue.
-9. Find Event by Name - Quickly search for events by name.
-10. Delete a Venue - Remove a venue that is no longer needed.
-11. Delete an Event - Remove events that are no longer needed.
-12. Delete an Attendee - Remove attendees from the system.
+**FEATURES Quick Overview**
+0. Exit: Exit the program.
+1. Create a New Venue: Create a venue for events.
+2. Create a New Event: Create events by providing event details like name, date, location, and description.
+3. Add an Attendee: Add a new attendee to an event by providing their name and email.
+4. Add an Existing Attendee to an Event: Assign an attendee who has already been created to another event.
+5. Add an Existing Venue to an Event: Assign a venue to an existing event.
+6. List All Venues: View a list of all created venues.
+7. List All Events: View a list of all created events.
+8. View Attendees for an Event: List all attendees for a specific event.
+9. List All Attendees: View a list of all attendees in the database.
+10. Search Events by Venue: Search and list events taking place at a specific venue.
+11. Find Event by Name: Quickly search for events by name.
+12. Delete a Venue: Remove a venue that is no longer needed.
+13. Delete an Event: Remove events that are no longer needed.
+14. Delete an Attendee: Remove attendees from the system.
+15. Remove an Attendee from an Event: Unassign an attendee from a specific event without deleting the attendee.
 **FEATURES GUIDE EXPANDED**
-Extensive FEATURES Guide
-**Option 1:**
+# Option 1:
 Create a New Venue
 Select option 1 in the menu.
-You will be prompted to enter the following details:
-
-1. A name for the venue.
-2.Event Organizer: Name of the person organizing events at this venue.
-3.Venue Earnings: Earnings for the venue.
-Once completed, you’ll see a confirmation message that the venue has been created.
-
-**Option 2:**
+You will be prompted to enter:
+1. Venue Name: The name of the venue.
+2. Event Organizer: The name of the person organizing the event.
+3. Venue Earnings: The total earnings for the venue.
+A confirmation message will indicate that the venue has been created.
+# Option 2:
 Create a New Event
 Select option 2 in the menu.
-You will be prompted to enter the following details:
-
-1.Event Name: A name for the event.
-2.Event Date: The date of the event.
-3.Event Location: The location (Venue) where the event will take place.
-4.Event Description: A description of the event.
-Once completed, you’ll see a confirmation that the event has been created.
-
-**Option 3:**
+You will be prompted to enter:
+1. Event Name: The name of the event.
+2. Event Date: The date of the event.
+3. Event Location: The venue where the event will take place.
+4. Event Description: A description of the event.
+5. A confirmation message will indicate that the event has been created.
+# Option 3:
 Add an Attendee to an Event
 Select option 3 in the menu.
-This option lets you add attendees to an event. You will be prompted to:
-
-1.Enter the Event ID: The ID of the event to add the attendee to.
-2.Enter Attendee Name: The name of the attendee.
-3.Enter Attendee Email: The email address of the attendee.
-A confirmation message will show that the attendee has been added to the event.
-
-**Option 4:**
+You will be prompted to enter:
+1. Event ID: The ID of the event.
+2. Attendee Name: The name of the attendee.
+3. Attendee Email: The email of the attendee.
+4. A confirmation message will indicate that the attendee has been added to the event.
+# Option 4: 
 Add an Existing Attendee to an Event
 Select option 4 in the menu.
-This option allows you to add an attendee that already exists in the system to another event:
-
-1.Select the Event ID for the event.
-2.Select the Attendee ID to associate the attendee with the event.
-
-**Option 5:**
+You can assign an attendee already in the system to another event by:
+1. Selecting the Event ID.
+2. Selecting the Attendee ID.
+# Option 5: 
+Add an Existing Venue to an Event
+Select option 5 in the menu.
+You can assign an existing venue to an event by:
+1. Selecting the Event ID.
+2. Selecting the Venue ID.
+A confirmation message will indicate that the venue has been assigned to the event.
+# Option 6: 
 List All Venues
-Select option 5 to view all venues:
-
-You will see a table listing each venue, including:
-ID: The unique ID of the venue.
-Name: The venue name.
-Organizer: Name of the event organizer.
-Earnings: Venue earnings.
-
-**Option 6:**
+Select option 6 to view a list of all venues.
+The table will show the following details:
+1. ID: The unique ID of the venue.
+2. Name: The name of the venue.
+3. Organizer: The event organizer.
+4. Earnings: The venue's earnings.
+# Option 7: 
 List All Events
-Select option 6 to view all existing events.
-A table will list each event and its details, including the attendees registered for the event.
-
-**Option 7:**
+Select option 7 to view a list of all events.
+The table will display details for each event, including the attendees.
+# Option 8: 
 List Attendees for an Event
-Select option 7 to view all attendees for a specific event.
-You will need to provide the Event ID, and if there are attendees, they will be listed in a table.
-
-**Option 8:**
+Select option 8 to view all attendees for a specific event.
+You will be prompted to provide the Event ID, and if there are attendees, they will be listed in a table.
+# Option 9: 
+List All Attendees
+Select option 9 to view a list of all attendees in the database.
+The table will show each attendee's ID, name, and email.
+# Option 10: 
 Search Events by Venue
-Select option 8 to search for events by venue.
-You will need to provide the Venue ID, and all events held at that venue will be displayed.
-
-**Option 9:**
+Select option 10 to search for events at a specific venue.
+Provide the Venue ID, and all events associated with that venue will be listed.
+# Option 11: 
 Find an Event by Name
-Select option 9 to search for an event by name.
-If matching events are found, they will be displayed in a table.
-
-**Option 10:**
+Select option 11 to search for an event by its name.
+Matching events will be displayed in a table.
+# Option 12: 
 Delete a Venue
-Select option 10 to delete a venue.
+Select option 12 to delete a venue.
 Provide the Venue ID, and the venue will be deleted if it exists.
-
-**Option 11:**
+# Option 13: 
 Delete an Event
-Select option 11 to delete an event.
+Select option 13 to delete an event.
 Provide the Event ID, and the event will be deleted if it exists.
-
-**Option 12:**
+# Option 14: 
 Delete an Attendee
-Select option 12 to delete an attendee.
-Provide the Attendee ID, and the attendee will be deleted if it exists.
+Select option 14 to delete an attendee from the system.
+Provide the Attendee ID, and the attendee will be deleted if they exist.
+# Option 15: 
+Remove an Attendee from an Event
+Select option 15 to remove an attendee from a specific event.
+Provide the Event ID and Attendee ID, and the attendee will be unassigned from the event.
 
-**Troubleshooting**
-Common Errors:
+                                            ### Troubleshooting  ###
+**Event Not Found:** If you try to find or delete an event that doesn’t exist, you’ll see a message like Event not found.
 
-Event Not Found: If you try to find or delete an event that doesn’t exist, you’ll see a message like:
-Event not found.
+**Attendee Not Found:** If you try to find or delete an attendee that doesn’t exist, you’ll see a message like Attendee not found.
 
-Attendee Not Found: Similarly, if you try to find or delete an attendee that doesn’t exist, you’ll see:
-Attendee not found.
+**Venue Not Found:** If you try to find or delete a venue that doesn’t exist, you’ll see a message like Venue not found.
 
-Resetting the Database: If you need to reset the database (for example, during testing), you can use the drop_table method for both Event and Attendee.
-
+# Resetting the Database
+If you need to reset the database (e.g., during testing), use the drop_table method for both the Event and Attendee models.

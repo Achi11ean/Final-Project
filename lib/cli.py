@@ -231,6 +231,59 @@ def add_existing_attendee_to_event():
     except ValueError as e:
         console.print(f"[yellow]{str(e)}[/yellow]")
 
+def list_all_attendees():
+    attendees = Attendee.get_all()  # Retrieve all attendees from the database
+    if attendees:
+        # Create a table to display attendee information
+        table = Table(title="[bold blue]All Attendees[/bold blue]")
+        table.add_column("ID", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Name", style="magenta")
+        table.add_column("Email", style="yellow")
+        
+        # Add each attendee to the table
+        for attendee in attendees:
+            table.add_row(str(attendee.id), attendee.name, attendee.email)
+        
+        console.print(table)  # Display the table in the console
+    else:
+        console.print("[yellow]No attendees found.[/yellow]")
+
+def remove_attendee_from_event():
+    # List all events to select from
+    events = Event.get_all()
+    if not events:
+        console.print("[yellow]No events found.[/yellow]")
+        return
+    console.print("[blue]Available Events:[/blue]")
+    for event in events:
+        console.print(f"ID: {event.id}, Name: {event.name}")
+    # Get the event ID from the user
+    event_id = validate_integer_input("Enter the Event ID to remove the attendee from: ")
+    event = Event.find_by_id(event_id)
+    if not event:
+        console.print("[red]Event not found.[/red]")
+        return
+    # List all attendees in the event to select from
+    attendees = Attendee.find_by_event_id(event.id)
+    if not attendees:
+        console.print("[yellow]No attendees found for this event.[/yellow]")
+        return
+    console.print("[blue]Attendees for Event:[/blue]")
+    for attendee in attendees:
+        console.print(f"ID: {attendee.id}, Name: {attendee.name}, Email: {attendee.email}")
+    # Get the attendee ID from the user
+    attendee_id = validate_integer_input("Enter the Attendee ID to remove from the event: ")
+    attendee = Attendee.find_by_id(attendee_id)
+    if not attendee:
+        console.print("[red]Attendee not found.[/red]")
+        return
+    # Remove the attendee from the event
+    try:
+        attendee.remove_from_event(event.id)  # Call the method to remove the attendee from the event
+        console.print(f"[green]Attendee {attendee.name} removed from event {event.name}.[/green]")
+    except ValueError as e:
+        console.print(f"[red]{str(e)}[/red]")
+
 def search_venue_events():
     venue_id = input("Enter Venue ID to Search for Events: ")
     venue = Venue.find_by_id(venue_id)
@@ -283,6 +336,41 @@ def delete_venue():
     else:
         console.print("[yellow]Venue not found[/yellow]")
 
+def add_existing_venue_to_event():
+    # List all events to select from
+    events = Event.get_all()
+    if not events:
+        console.print("[yellow]No events found.[/yellow]")
+        return
+    console.print("[blue]Available Events:[/blue]")
+    for event in events:
+        console.print(f"ID: {event.id}, Name: {event.name}")
+    # Get event ID from the user
+    event_id = validate_integer_input("Enter the Event ID to assign a venue to: ")
+    event = Event.find_by_id(event_id)
+    if not event:
+        console.print("[red]Event not found.[/red]")
+        return
+    # List all venues to select from
+    venues = Venue.get_all()
+    if not venues:
+        console.print("[yellow]No venues found.[/yellow]")
+        return
+    console.print("[blue]Available Venues:[/blue]")
+    for venue in venues:
+        console.print(f"ID: {venue.id}, Name: {venue.name}, Organizer: {venue.organizer}")
+    # Get venue ID from the user
+    venue_id = validate_integer_input("Enter the Venue ID to assign to the event: ")
+    venue = Venue.find_by_id(venue_id)
+    if not venue:
+        console.print("[red]Venue not found.[/red]")
+        return
+    # Assign the venue to the event
+    event.venue_id = venue.id
+    event.save()  # Save the changes to the event
+    console.print(f"[green]Venue {venue.name} assigned to event {event.name}.[/green]")
+
+
 #main function that runs CLI loop - 
 def main():
     while True:     # Infinite loop to keep the program running
@@ -300,54 +388,61 @@ def main():
             add_attendee()
         elif choice == "4":     # Add an existing attendee to an existing event
             add_existing_attendee_to_event()
+        elif choice == "5":
+            add_existing_venue_to_event()     #add an existing venue to an existing event
         
         # Grouped List Operations
-        elif choice == "5":     # List all venues
+        elif choice == "6":     # List all venues
             list_venues()
-        elif choice == "6":     # List all events
+        elif choice == "7":     # List all events
             list_events()
-        elif choice == "7":     # List attendees for an event
+        elif choice == "8":     # List attendees for an event
             list_event_attendees()
-        elif choice == "8":     # Search events by venue
+        elif choice == "9":
+            list_all_attendees()
+        elif choice == "10":     # Search events by venue
             search_venue_events()
-        elif choice == "9":    # Find an event by name
+        elif choice == "11":    # Find an event by name
             find_by_event_name()
-            
+
         # Grouped Delete Operations
-        elif choice == "10":     # Delete a venue
+        elif choice == "12":     # Delete a venue
             delete_venue()
-        elif choice == "11":     # Delete an event
+        elif choice == "13":     # Delete an event
             delete_event()
-        elif choice == "12":    # Delete an attendee
+        elif choice == "14":    # Delete an attendee
             delete_attendee()
+        elif choice == "15":
+            remove_attendee_from_event()  #remove an attendee from an event but don't delete them 
         # Invalid input handling
         else:
             console.print("[bold red]Invalid choice. Please try again.[/bold red]")
+
 #function to display menu 
 def menu():
     console.print(f"[bold green underline]Please select an option:[/bold green underline]")
     
     # Grouped Create Options
-    console.print("[bold blue]1. Create A New Venue[/bold blue]")
-    console.print("[bold blue]2. Create A New Event[/bold blue]")
-    console.print("[bold blue]3. Add An Attendee to an Event[/bold blue]")
-    console.print("[bold blue]4. Add An Existing Attendee to an Existing Event")
+    console.print("[blue]1. Create A New Venue[/blue]")
+    console.print("[blue]2. Create A New Event[/blue]")
+    console.print("[blue]3. Add An Attendee to an Event[/blue]")
+    console.print("[blue]4. Add An Existing Attendee to an Existing Event[/blue]")
+    console.print("[blue]5. Add an Existing Venue To an Existing Event[/blue]")
     
     # Grouped List Options
-    console.print("[bold blue]5. List All Venues[/bold blue]")
-    console.print("[bold blue]6. List All Events[/bold blue]")
-    console.print("[bold blue]7. List Attendees for an Event[/bold blue]")
-    console.print("[bold blue]8. Search Events by Venue[/bold blue]")
-    console.print("[bold blue]9. Find An Event by Name[/bold blue]")
+    console.print("[bold cyan]6. List All Venues[/bold cyan]")
+    console.print("[bold cyan]7. List All Events[/bold cyan]")
+    console.print("[bold Cyan]8. List Attendees for an Event[/bold cyan]")
+    console.print("[bold cyan]9. List All Attendees in Database[/bold cyan]")
+    console.print("[bold magenta]10. Search Events by Venue[/bold magenta]")
+    console.print("[bold magenta]11. Find An Event by Name[/bold magenta]")
     
     # Grouped Delete Options
-    console.print("[bold yellow]10. Delete A Venue[/bold yellow]")
-    console.print("[bold yellow]11. Delete An Event[/bold yellow]")
-    console.print("[bold yellow]12. Delete An Attendee[/bold yellow]")
-    
-    # Miscellaneous Option
+    console.print("[yellow]12. Delete A Venue[/yellow]")
+    console.print("[yellow]13. Delete An Event[/yellow]")
+    console.print("[yellow]14. Delete An Attendee[/yellow]")
+    console.print("[yellow]15. Remove an Attendee from an Event[/yellow]")
 
-    
     # Exit Option
     console.print("[bold red]0. Exit The Program[/bold red]")
 if __name__ == "__main__":

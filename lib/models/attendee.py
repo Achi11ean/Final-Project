@@ -44,6 +44,13 @@ class Attendee:
         else:
             raise ValueError("Please Enter a valid email")
 
+    #this executes sql to create the attendees table in the DB (if it doesn't exist)
+    #the second cursor.execute establishes a many to many relationship between attendees and events
+    #event_id integer: stores the attendee which references an attendee from the attendees table
+    #foreign key: links attende_id to the id in the attendees table. the ON DELETE CASCADE ensures that if an attendee is deleted - etc >
+    #Primary key specifies that the combination of attendee_id and event_id must be unique
+    # ---->this ensures that the same attendee cannot cannot be added to the same event morew than once!
+
     @classmethod
     def create_table(cls):
         CURSOR.execute('''
@@ -156,7 +163,12 @@ class Attendee:
             VALUES (?, ?)
         ''', (self.id, event_id))
         CONN.commit()
-
+    #This method retrieves a list of events that a specific attendee is associated with 
+    # SELECT events. selects all columns from the events table
+    #FROM events specifies the events table as the main tabl
+    #JOIN -> performs an sql JOIN between events table and the attendee events association table using the event_id
+    #WHERE filters the results to only include rows where the attendee_id in the attendee_events table MATCHES the provided attendee_id. 
+    # ? is a placeholderfor the attendee_id to be passed into the method
     @classmethod
     def get_events_for_attendee(cls, attendee_id):
         rows = CURSOR.execute('''
@@ -166,5 +178,22 @@ class Attendee:
         ''', (attendee_id,)).fetchall()
         from .event import Event
         return [Event.instance_from_db(row) for row in rows]
+    #From --> importing the event class to create event instances 
+    # return --> for each row returned from sql query (each event) , this line crteates an event object by calling the instance_from_db method of the Event Class
+    #this method converts a dabase row into an event object. because it's in [ ] it returns a list of the event objects representing all the events associated with the given attendee
 
 
+    def remove_from_event(self, event_id):
+        # Check if the attendee is associated with the event
+        existing_record = CURSOR.execute('''
+            SELECT * FROM attendee_events 
+            WHERE attendee_id = ? AND event_id = ?
+        ''', (self.id, event_id)).fetchone()
+        if not existing_record:
+            raise ValueError(f"Attendee {self.name} is not associated with this event.")
+        # If associated, remove the attendee from the event
+        CURSOR.execute('''
+            DELETE FROM attendee_events 
+            WHERE attendee_id = ? AND event_id = ?
+        ''', (self.id, event_id))
+        CONN.commit()

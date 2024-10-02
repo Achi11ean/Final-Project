@@ -92,7 +92,7 @@ class Event:
     
     #method to save the current event to the DB , inserts if new, updates if it exists.
     #Insert new event into the DB and set the project's ID from the last inserted row or update an existing event in the DB
-    #In the last line we are storing the event object in the in-memory disctionary for easy access
+    #In the last line we are storing the event object in the in-memory dictionary for easy access.
     def save(self):
         if self.id is None:
             CURSOR.execute('''
