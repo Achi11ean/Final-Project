@@ -105,19 +105,61 @@ def list_events():
 
 #function to add an attendee to an event with a prompt to the user to enter attendee and event details. 
 def add_attendee():
-    event_id = input("Enter the event ID: ")
-    name= input("Enter attendee name: ")
-    email = input("Enter attendee Email: ")
-    #find the event by ID
-    event = Event.find_by_id(event_id)
-    if event:
-        #if event is found create a new attendee for the event and print it to the console. if not found raise an error for the user to know. 
-        attendee = Attendee.create(name, email)
-        attendee.add_to_event(event.id)
-        console.print(f"[green ]Attendee {attendee} added to the event {event.name}.[/green]")
-    else: 
-        console.print("[yellow]Event not found.[/yellow]")
+    try:
+        # Step 1: Prompt the user for attendee details
+        name = input("Enter attendee name: ").strip()
+        email = input("Enter attendee Email: ").strip()
 
+        # Step 2: Create the attendee
+        attendee = Attendee.create(name, email)
+        console.print(f"[green]Attendee {attendee.name} created successfully.[/green]")
+
+        # Step 3: Prompt the user to assign favorite artists
+        artists = Artist.get_all()  # Get all available artists
+        if artists:
+            console.print("[blue]Available Artists to add as favorites:[/blue]")
+            for artist in artists:
+                console.print(f"ID: {artist.id}, Name: {artist.name}")
+
+            # Allow the user to select multiple artists (comma-separated input)
+            artist_ids = input("Enter comma-separated Artist IDs to add to favorites (or leave blank to skip): ").split(',')
+            artist_ids = [artist_id.strip() for artist_id in artist_ids if artist_id.strip().isdigit()]
+
+            # Add selected artists to the attendee's favorites
+            for artist_id in artist_ids:
+                artist = Artist.find_by_id(artist_id)
+                if artist:
+                    attendee.add_favorite_artist(artist)
+                    console.print(f"[green]Artist {artist.name} added to {attendee.name}'s favorites.[/green]")
+                else:
+                    console.print(f"[yellow]Artist ID {artist_id} not found.[/yellow]")
+        else:
+            console.print("[yellow]No artists available to add to favorites. Please create an artist first.[/yellow]")
+
+        # Step 4: After favorite artists are added, associate the attendee with an event
+        events = Event.get_all()
+        if events:
+            console.print("[blue]Available Events:[/blue]")
+            for event in events:
+                console.print(f"ID: {event.id}, Name: {event.name}")
+
+            # Ask for event assignment
+            event_id = input("Enter the event ID to associate the attendee with (or leave blank to skip): ").strip()
+            if event_id and event_id.isdigit():
+                event = Event.find_by_id(event_id)
+                if event:
+                    attendee.add_to_event(event.id)
+                    console.print(f"[green]Attendee {attendee.name} added to event {event.name}.[/green]")
+                else:
+                    console.print("[yellow]Event not found.[/yellow]")
+            else:
+                console.print("[yellow]No event assigned. Skipping event association.[/yellow]")
+        else:
+            console.print("[yellow]No events available. Please create an event first.[/yellow]")
+
+    except ValueError as e:
+        # Handle any errors during the process
+        console.print(f"[red]Error: {e}. Please try again with valid input.[/red]")
 #function to delete an attendee with a promt for attendee ID. if attendee exists, delete it and confirm it's deletion. If it's doesn't exist, raise an error. 
 def delete_attendee():
     attendee_id = input("Enter the Attendee ID to delete: ")
@@ -127,25 +169,7 @@ def delete_attendee():
         console.print(f"[red] Attendee {attendee.name} has been deleted.[/red]")
     else:
         console.print("[yellow]Attendee Not found. [/yellow]")
-def add_attendee():
-    event_id = input("Enter the event ID: ")
-    name = input("Enter attendee name: ")
-    email = input("Enter attendee Email: ")    
-    # find the event by ID
-    event = Event.find_by_id(event_id)
-    if event:
-        try:
-            # Attempt to create the attendee
-            attendee = Attendee.create(name, email)
-            # If successful, add the attendee to the event
-            attendee.add_to_event(event.id)
-            console.print(f"[green]Attendee {attendee.name} added to the event {event.name}.[/green]")
-        except ValueError as e:
-            # Handle the ValueError for invalid email input and display user-friendly message
-            console.print(f"[red]Error: {e}[/red]")  # Prints "Please Enter a valid email" or any other ValueError message
-    else: 
-        console.print("[yellow]Event not found.[/yellow]")
-        
+
 #function to delete an event with a prompt for the event ID to delete a specified event. if it exists, show a confirmation it's deleted. if not raise a user error.
 def delete_event():
     event_id = input("Enter Event ID to delete: ")
@@ -223,25 +247,26 @@ def list_event_attendees():
         console.print("[yellow]Event Not found[/yellow]")
 
 def find_attendee_by_name():
-    # Prompt user to enter attendee name to search
     name = input("Enter attendee name to search: ").strip()
-    
-    # Fetch all attendees from the DB
     attendees = Attendee.get_all()
-    
-    # Find matching attendees based on the name provided
+
     matching_attendees = [attendee for attendee in attendees if name.lower() in attendee.name.lower()]
     if matching_attendees:
-        # Create a table to display the matching attendees
         table = Table(title=f"[bold green]Attendees Matching: '{name}'[/bold green]")
         table.add_column("ID", justify="right", style="cyan", no_wrap=True)
         table.add_column("Name", style="magenta")
         table.add_column("Email", style="yellow")
-        
-        # Add the matching attendees to the table
+        table.add_column("Favorite Artists", style="green")
+
         for attendee in matching_attendees:
-            table.add_row(str(attendee.id), attendee.name, attendee.email)
+            favorite_artists = attendee.get_favorite_artists()
+            favorite_artists_str = ", ".join([artist.name for artist in favorite_artists]) if favorite_artists else "None"
+            table.add_row(str(attendee.id), attendee.name, attendee.email, favorite_artists_str)
+
         console.print(table)
+
+        assign_favorite_artist_to_attendee(matching_attendees[0])
+
     else:
         console.print(f"[yellow]No attendee found with the name '{name}'.[/yellow]")
 
@@ -332,6 +357,27 @@ def remove_attendee_from_event():
         console.print(f"[green]Attendee {attendee.name} removed from event {event.name}.[/green]")
     except ValueError as e:
         console.print(f"[red]{str(e)}[/red]")
+
+def assign_favorite_artist_to_attendee(attendee):
+    artists = Artist.get_all()
+    if not artists:
+        console.print("[red]No artists available. Please create an artist first.[/red]")
+        return
+
+    console.print("[blue]Available Artists:[/blue]")
+    for artist in artists:
+        console.print(f"ID: {artist.id}, Name: {artist.name}")
+
+    artist_id = input("Enter the Artist ID to add as a favorite (or leave blank to skip): ").strip()
+    if artist_id:
+        artist = Artist.find_by_id(artist_id)
+        if artist:
+            attendee.add_favorite_artist(artist)
+            console.print(f"[green]Artist {artist.name} added to {attendee.name}'s favorites.[/green]")
+        else:
+            console.print(f"[red]Artist with ID {artist_id} not found.[/red]")
+    else:
+        console.print("[yellow]Skipping favorite artist assignment.[/yellow]")
 
 def search_venue_events():
     venue_id = input("Enter Venue ID to Search for Events: ")
@@ -612,14 +658,36 @@ def create_artist():
                 raise ValueError("Artist Email must not be empty.")
 
             # Create the artist using the Artist model
-            artist = Artist.create(name, hometown, love_for_music, future_goals, social_media, email)  # Include email here
+            artist = Artist.create(name, hometown, love_for_music, future_goals, social_media, email)
             console.print(f"[green]Artist {artist.name} created successfully![/green]")
+
+            # Now, prompt to assign events to the artist
+            events = Event.get_all()
+            if events:
+                console.print("[blue]Available Events:[/blue]")
+                for event in events:
+                    console.print(f"ID: {event.id}, Name: {event.name}")
+                
+                # Allow the user to select multiple events (comma-separated input)
+                event_ids = input("Enter comma-separated Event IDs to assign to this artist (or leave blank to skip): ").split(',')
+                event_ids = [event_id.strip() for event_id in event_ids if event_id.strip().isdigit()]
+                
+                # Assign selected events to the artist
+                for event_id in event_ids:
+                    event = Event.find_by_id(event_id)
+                    if event:
+                        artist.add_event(event)  # Assuming the Artist model has an `add_event()` method
+                        console.print(f"[green]Event {event.name} assigned to artist {artist.name}.[/green]")
+                    else:
+                        console.print(f"[yellow]Event ID {event_id} not found.[/yellow]")
+            else:
+                console.print("[yellow]No events available to assign. Please create an event first.[/yellow]")
+
             break  # Exit the loop on success
         
         except ValueError as e:
             # Catching the validation error and prompting user to try again
             console.print(f"[red]Error: {e}. Please provide valid input.[/red]")
-
 def list_all_artists():
     artists = Artist.get_all()  # Retrieve all artists from the database
     if artists:
@@ -718,12 +786,14 @@ def find_artist_by_name():
     else:
         console.print("[yellow]No artists found. Please create an artist first.[/yellow]")
         return
+
     # Prompt user to enter artist name to search
     name = input("Enter artist name to search: ").strip()
+
     # Find matching artists based on the name provided
     matching_artists = [artist for artist in artists if name.lower() in artist.name.lower()]
     if matching_artists:
-        # Create a table to display the matching artists
+        # Create a table to display the matching artists and their associated events
         table = Table(title=f"[bold green]Artists Matching: '{name}'[/bold green]")
         table.add_column("ID", justify="right", style="cyan")
         table.add_column("Name", style="magenta")
@@ -731,10 +801,34 @@ def find_artist_by_name():
         table.add_column("Love for Music", style="yellow")
         table.add_column("Future Goals", style="cyan")
         table.add_column("Social Media", style="magenta")
-        # Add the matching artists to the table
+        table.add_column("Email", style="blue")
+        table.add_column("Events", style="green")  # New column for Events
+        table.add_column("Favorited By", style="yellow")  # New column for Attendees
+
+        # Loop through matching artists and display them in the table
         for artist in matching_artists:
-            table.add_row(str(artist.id), artist.name, artist.hometown, artist.love_for_music,
-                          artist.future_goals, artist.social_media)
+            # Fetch the events the artist is attending
+            events = artist.get_events()  # Assuming you have a method to fetch artist's events
+            events_str = ", ".join([event.name for event in events]) if events else "No Events"
+
+            # Fetch the attendees who favorited the artist
+            favorite_by_attendees = artist.get_favorite_by_attendees()  # Assuming we updated this method
+            attendees_str = ", ".join([attendee.name for attendee in favorite_by_attendees]) if favorite_by_attendees else "No Favorites"
+
+            # Add the artist, their events, and the attendees who favorited them to the table
+            table.add_row(
+                str(artist.id), 
+                artist.name, 
+                artist.hometown, 
+                artist.love_for_music, 
+                artist.future_goals, 
+                artist.social_media, 
+                artist.email, 
+                events_str,  # Add events to the new column
+                attendees_str  # Add attendees who favorited the artist
+            )
+
+        # Display the table
         console.print(table)
     else:
         console.print(f"[yellow]No artist found with the name '{name}'.[/yellow]")
@@ -961,7 +1055,7 @@ def menu():
         "4. Search Venue by Name", 
         "9. Search Event by Name", 
         "20. Remove Event from Tour", 
-        "--- song options ---"
+        "[green]--- Song Options ---[/green]"
     )
     table.add_row(
         "5. Delete Venue", 
@@ -971,7 +1065,7 @@ def menu():
     )
 
     # Add a separator and then the attendee options under event column
-    table.add_row("", "--- attendee options ---", "", "")
+    table.add_row("", "[yellow]--- attendee options ---[/yellow]", "", "")
     table.add_row("", "11. Add Attendee", "", "26. List Songs by Artist")
     table.add_row("", "12. Add Existing Attendee to Event", "", "27. Delete Song")
     table.add_row("", "13. Remove Attendee from Event", "", "")

@@ -1,17 +1,20 @@
 from .. import CURSOR, CONN
 from .song import Song  # Import the Song model
+from .event import Event
+from .attendee import Attendee
 
 class Artist:
     all = {}
 
     def __init__(self, name, hometown, love_for_music, future_goals, social_media, email, id=None):
-        self.id = id
+        self.id = id  # Initialize the artist's id (will be assigned when saved to the database)
         self.name = name
         self.hometown = hometown
         self.love_for_music = love_for_music
         self.future_goals = future_goals
         self.social_media = social_media
-        self.email = email  # Ensure email is correctly assigned
+        self.email = email
+        self.events = []  # A list to store events associated with the artist
 
     @property
     def email(self):
@@ -45,10 +48,21 @@ class Artist:
                 email TEXT  -- Add the email column
             )
         ''')
+        # Create a junction table for the many-to-many relationship between artists and events
+        CURSOR.execute('''
+            CREATE TABLE IF NOT EXISTS artist_events (
+                artist_id INTEGER,
+                event_id INTEGER,
+                FOREIGN KEY (artist_id) REFERENCES artists(id),
+                FOREIGN KEY (event_id) REFERENCES events(id),
+                PRIMARY KEY (artist_id, event_id)
+            )
+        ''')
         CONN.commit()
 
     @classmethod
     def drop_table(cls):
+        CURSOR.execute('DROP TABLE IF EXISTS artist_events')
         CURSOR.execute('DROP TABLE IF EXISTS artists')
         CONN.commit()
 
@@ -72,6 +86,7 @@ class Artist:
     def delete(self):
         if self.id is not None:
             CURSOR.execute('DELETE FROM artists WHERE id = ?', (self.id,))
+            CURSOR.execute('DELETE FROM artist_events WHERE artist_id = ?', (self.id,))  # Remove artist-event links
             CONN.commit()
             if self.id in type(self).all:
                 del type(self).all[self.id]
@@ -121,10 +136,35 @@ class Artist:
 
     @classmethod
     def create(cls, name, hometown, love_for_music, future_goals, social_media, email):
+        # Create a new artist instance without an id initially
         artist = cls(name, hometown, love_for_music, future_goals, social_media, email)
-        artist.save()
+        artist.save()  # Save the artist to assign an id
         return artist
-    
+
+    # Event management for Artist
+
+    def add_event(self, event):
+        # Add the event to the artist's list of events and link it in the DB
+        self.events.append(event)
+        CURSOR.execute('''
+            INSERT INTO artist_events (artist_id, event_id)
+            VALUES (?, ?)
+        ''', (self.id, event.id))
+        CONN.commit()
+
     def get_events(self):
-        # Fetch events that this artist is associated with
-        return [event for event in Event.all.values() if self in event.artists]
+        # Fetch events associated with this artist from the DB
+        rows = CURSOR.execute('''
+            SELECT e.* FROM events e
+            JOIN artist_events ae ON e.id = ae.event_id
+            WHERE ae.artist_id = ?
+        ''', (self.id,)).fetchall()
+        return [Event.instance_from_db(row) for row in rows]
+
+    def get_favorite_by_attendees(self):
+        # Return attendees who have this artist in their `favorite_artists` list
+        attendees_favoriting_this_artist = []
+        for attendee in Attendee.get_all():
+            if self in attendee.favorite_artists:
+                attendees_favoriting_this_artist.append(attendee)
+        return attendees_favoriting_this_artist

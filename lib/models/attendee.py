@@ -1,56 +1,45 @@
 from .. import CURSOR, CONN
 
 class Attendee:
-    #This Class represents an Attendee and manages the DB interactions for the attendees table
-
-
-    #This is a dictionary to keep track of all attendee objects in memory
+    # This class represents an Attendee and manages DB interactions for the attendees table.
     all = {}
-    #initialize an Attendee object with name, email, and an optional id 
-    #If  the object is new Id is None and is automatically generated when saving to the DB
+
+    # Initialize an Attendee object with name, email, and an optional id.
+    # If the object is new, id is None and is automatically generated when saving to the DB.
     def __init__(self, name, email, id=None):
         self.id = id
         self.name = name
         self.email = email
-            
-    #String Representation of the attendee object.
+        self.favorite_artists = []  # List to store favorite artists
+    
+    # String representation of the Attendee object.
     def __repr__(self):
         return f"<Attendee {self.id}: {self.name}, {self.email}>"
 
-    #Property Methods for name, email, event_ id with validationssss 
-    #Getter for the attendee's name
+    # Property methods for name and email, with validation.
     @property
     def name(self):
         return self._name
     
-    #Setter for the attendee's name with validation to make sure it is a NONEMPTY STRING
     @name.setter
     def name(self, name):
-        if isinstance(name,str) and len(name.strip()) > 0:
+        if isinstance(name, str) and len(name.strip()) > 0:
             self._name = name
         else: 
-            raise ValueError("Name must be a string longer than 0 Characters")
+            raise ValueError("Name must be a string longer than 0 characters.")
     
-    #Getter for the attendee's email
     @property
     def email(self):
         return self._email
     
-    #setter for the attendee's email with validation to ensure email contains @ and . for basic email validation
     @email.setter
-    def email(self,email):
+    def email(self, email):
         if "@" in email and "." in email:
             self._email = email
         else:
-            raise ValueError("Please Enter a valid email")
+            raise ValueError("Please enter a valid email.")
 
-    #this executes sql to create the attendees table in the DB (if it doesn't exist)
-    #the second cursor.execute establishes a many to many relationship between attendees and events
-    #event_id integer: stores the attendee which references an attendee from the attendees table
-    #foreign key: links attende_id to the id in the attendees table. the ON DELETE CASCADE ensures that if an attendee is deleted - etc >
-    #Primary key specifies that the combination of attendee_id and event_id must be unique
-    # ---->this ensures that the same attendee cannot cannot be added to the same event morew than once!
-
+    # Create the `attendees` and `attendee_events` tables in the database (if they don't exist).
     @classmethod
     def create_table(cls):
         CURSOR.execute('''
@@ -70,25 +59,24 @@ class Attendee:
             )
         ''')
         CONN.commit()
+
     @classmethod
     def drop_table(cls):
-        #Drop the attendees table from the database useful during testing to reset the DB
+        # Drop the attendees table from the database, useful during testing to reset the DB.
         CURSOR.execute('DROP TABLE IF EXISTS attendees')
         CONN.commit()
+
     def save(self):
-        #save the attendee object to the DB, if the attendee is new (id = None) it will be inserted into the table. Otherwise an existin one will be updated.
-        if self.id == None:
-            #insert a new row into the attendee's table
+        # Save the attendee object to the DB. If the attendee is new, it will be inserted into the table.
+        if self.id is None:
             CURSOR.execute('''
                 INSERT INTO attendees(name, email)
                 VALUES (?, ?)
             ''', (self.name, self.email))
             CONN.commit()
-            #set the id of the object to the last inserted row's id
             self.id = CURSOR.lastrowid
             type(self).all[self.id] = self
         else:
-            #update the existing row with new values
             CURSOR.execute('''
                 UPDATE attendees
                 SET name = ?, email = ?
@@ -99,36 +87,38 @@ class Attendee:
 
     @classmethod
     def create(cls, name, email):
-        #factory method to create a new attendee object and save it to the DB
+        # Factory method to create a new attendee object and save it to the DB.
         attendee = cls(name, email)
         attendee.save()
         return attendee
+
     def delete(self):
-        #delete the attendee object from the DB; removes the record from the attendees table and from the in-memory dictionary
+        # Delete the attendee object from the DB and from the in-memory dictionary.
         if self.id is not None:
-            #delete the row from the table
             CURSOR.execute('DELETE FROM attendees WHERE id= ?', (self.id,))
             CONN.commit()
-            #remove the object from the in-memory dictionary
             del type(self).all[self.id]
             self.id = None
         else:
             raise ValueError("Attendee does not exist in the database")
+
     @classmethod
     def get_all(cls):
-        #fetch all attendee records from the DB and return them as a list of attendee objects
+        # Fetch all attendee records from the DB and return them as a list of attendee objects.
         rows = CURSOR.execute("SELECT * FROM attendees").fetchall()
         return [cls.instance_from_db(row) for row in rows]
+
     @classmethod
     def find_by_id(cls, attendee_id):
-        #find an attendee by their unique ID if found return the attendee object; otherwise return None
+        # Find an attendee by their unique ID. If found, return the attendee object; otherwise, return None.
         row = CURSOR.execute("SELECT * FROM attendees WHERE id = ?", (attendee_id,)).fetchone()
         if row:
             return cls.instance_from_db(row)
         return None
+
     @classmethod
     def find_by_event_id(cls, event_id):
-        # This method will retrieve attendees by event_id from the attendee_events association table
+        # This method will retrieve attendees by event_id from the attendee_events association table.
         rows = CURSOR.execute('''
             SELECT attendees.* FROM attendees
             JOIN attendee_events ON attendees.id = attendee_events.attendee_id
@@ -138,42 +128,33 @@ class Attendee:
 
     @classmethod
     def instance_from_db(cls, row):
-        #return an attendee object initialized from a DB row, the row is expected to contain the ID, name, email and event_id,
+        # Return an attendee object initialized from a DB row.
         attendee_id = row[0]
-        #check if the attendee already exists in memory to avoid duplication
         if attendee_id in cls.all:
             return cls.all[attendee_id]
-        #create a new attendee object and add it to the in memory dictionary
         attendee = cls(id=row[0], name=row[1], email=row[2])
         cls.all[attendee.id] = attendee
         return attendee
-    
+
     def add_to_event(self, event_id):
-    # Check if the attendee is already associated with the event
+        # Check if the attendee is already associated with the event.
         existing_record = CURSOR.execute('''
             SELECT * FROM attendee_events 
             WHERE attendee_id = ? AND event_id = ?
         ''', (self.id, event_id)).fetchone()
-    # Debugging output to track what's happening
-        print(f"Debug: Checking if attendee {self.id} is already added to event {event_id}: {existing_record}")
         if existing_record:
-        # Instead of raising an error, just notify the user
             print(f"Warning: Attendee {self.name} is already added to event ID {event_id}.")
-            return  # Exit the method gracefully
-    # If not already associated, insert into the attendee_events table
+            return
+        # If not already associated, insert into the attendee_events table.
         CURSOR.execute('''
             INSERT INTO attendee_events (attendee_id, event_id)
             VALUES (?, ?)
         ''', (self.id, event_id))
         CONN.commit()
-    #This method retrieves a list of events that a specific attendee is associated with 
-    # SELECT events. selects all columns from the events table
-    #FROM events specifies the events table as the main tabl
-    #JOIN -> performs an sql JOIN between events table and the attendee events association table using the event_id
-    #WHERE filters the results to only include rows where the attendee_id in the attendee_events table MATCHES the provided attendee_id. 
-    # ? is a placeholderfor the attendee_id to be passed into the method
+
     @classmethod
     def get_events_for_attendee(cls, attendee_id):
+        # Fetch the events an attendee is associated with.
         rows = CURSOR.execute('''
             SELECT events.* FROM events
             JOIN attendee_events ON events.id = attendee_events.event_id
@@ -181,20 +162,25 @@ class Attendee:
         ''', (attendee_id,)).fetchall()
         from .event import Event
         return [Event.instance_from_db(row) for row in rows]
-    #From --> importing the event class to create event instances 
-    # return --> for each row returned from sql query (each event) , this line crteates an event object by calling the instance_from_db method of the Event Class
-    #this method converts a dabase row into an event object. because it's in [ ] it returns a list of the event objects representing all the events associated with the given attendee
 
+    def add_favorite_artist(self, artist):
+        # Add an artist to the attendee's favorite list (stored in memory, not DB).
+        if artist not in self.favorite_artists:
+            self.favorite_artists.append(artist)
+
+    def get_favorite_artists(self):
+        # Return the favorite artists of the attendee.
+        return self.favorite_artists
 
     def remove_from_event(self, event_id):
-        # Check if the attendee is associated with the event
+        # Check if the attendee is associated with the event.
         existing_record = CURSOR.execute('''
             SELECT * FROM attendee_events 
             WHERE attendee_id = ? AND event_id = ?
         ''', (self.id, event_id)).fetchone()
         if not existing_record:
             raise ValueError(f"Attendee {self.name} is not associated with this event.")
-        # If associated, remove the attendee from the event
+        # If associated, remove the attendee from the event.
         CURSOR.execute('''
             DELETE FROM attendee_events 
             WHERE attendee_id = ? AND event_id = ?
