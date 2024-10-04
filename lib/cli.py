@@ -793,7 +793,7 @@ def find_artist_by_name():
     # Find matching artists based on the name provided
     matching_artists = [artist for artist in artists if name.lower() in artist.name.lower()]
     if matching_artists:
-        # Create a table to display the matching artists and their associated events
+        # Create a table to display the matching artists and their associated details
         table = Table(title=f"[bold green]Artists Matching: '{name}'[/bold green]")
         table.add_column("ID", justify="right", style="cyan")
         table.add_column("Name", style="magenta")
@@ -802,8 +802,9 @@ def find_artist_by_name():
         table.add_column("Future Goals", style="cyan")
         table.add_column("Social Media", style="magenta")
         table.add_column("Email", style="blue")
-        table.add_column("Events", style="green")  # New column for Events
-        table.add_column("Favorited By", style="yellow")  # New column for Attendees
+        table.add_column("Events", style="green")  # Column for Events
+        table.add_column("Favorited By", style="yellow")  # Column for Attendees
+        table.add_column("Songs", style="red")  # New column for Songs
 
         # Loop through matching artists and display them in the table
         for artist in matching_artists:
@@ -812,10 +813,14 @@ def find_artist_by_name():
             events_str = ", ".join([event.name for event in events]) if events else "No Events"
 
             # Fetch the attendees who favorited the artist
-            favorite_by_attendees = artist.get_favorite_by_attendees()  # Assuming we updated this method
+            favorite_by_attendees = artist.get_favorite_by_attendees()  # Fetch attendees who favorited the artist
             attendees_str = ", ".join([attendee.name for attendee in favorite_by_attendees]) if favorite_by_attendees else "No Favorites"
 
-            # Add the artist, their events, and the attendees who favorited them to the table
+            # Fetch the songs associated with the artist
+            songs = artist.get_songs()  # Assuming you have a method to fetch artist's songs
+            songs_str = ", ".join([song.title for song in songs]) if songs else "No Songs"
+
+            # Add the artist, their events, attendees, and songs to the table
             table.add_row(
                 str(artist.id), 
                 artist.name, 
@@ -825,7 +830,8 @@ def find_artist_by_name():
                 artist.social_media, 
                 artist.email, 
                 events_str,  # Add events to the new column
-                attendees_str  # Add attendees who favorited the artist
+                attendees_str,  # Add attendees who favorited the artist
+                songs_str  # Add songs to the new column
             )
 
         # Display the table
@@ -1074,7 +1080,7 @@ def menu():
     table.add_row("", "16. Delete Attendee", "", "")
 
     # Add the reset/delete options
-    table.add_row("0. Exit Program", "", "", "99. Reset Database")
+    table.add_row("[bold red]0. Exit Program[bold red]", "", "", "[bold red]99. Reset Database[/bold red]")
 
     # Display the table
     console.print(table)
