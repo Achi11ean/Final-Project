@@ -154,9 +154,12 @@ class Attendee:
             SELECT * FROM attendee_events 
             WHERE attendee_id = ? AND event_id = ?
         ''', (self.id, event_id)).fetchone()
-
+    # Debugging output to track what's happening
+        print(f"Debug: Checking if attendee {self.id} is already added to event {event_id}: {existing_record}")
         if existing_record:
-            raise ValueError(f"Attendee {self.name} is already added to this event.")
+        # Instead of raising an error, just notify the user
+            print(f"Warning: Attendee {self.name} is already added to event ID {event_id}.")
+            return  # Exit the method gracefully
     # If not already associated, insert into the attendee_events table
         CURSOR.execute('''
             INSERT INTO attendee_events (attendee_id, event_id)

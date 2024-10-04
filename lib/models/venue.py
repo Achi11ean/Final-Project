@@ -38,8 +38,7 @@ class Venue:
         if isinstance(earnings, str) and len(earnings.strip()) > 0:
             self._earnings = earnings
         else:
-            raise ValueError("Earnings must be longer than 0 characters and a string")
-    
+            raise ValueError("Earnings must be a non-empty string.")
     @classmethod
     def create_table(cls):
         CURSOR.execute('''

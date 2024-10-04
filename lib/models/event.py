@@ -12,6 +12,7 @@ class Event:
         self.location = location
         self.description = description
         self.venue_id = venue_id
+        self.artists = []  # List to hold associated artists
     
     #String representation of the Event object for easy debugging and display
     def __repr__(self):
@@ -69,7 +70,6 @@ class Event:
     #Then commit the changes to the database after executing the sql statement
     @classmethod
     def create_table(cls): 
-        """create an events table if it DOESNT exist"""
         CURSOR.execute('''
             CREATE TABLE IF NOT EXISTS events (
                 id INTEGER PRIMARY KEY,
@@ -77,11 +77,12 @@ class Event:
                 date TEXT,
                 location TEXT,
                 description TEXT,
-                venue_id Integer,
-                FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE
+                venue_id INTEGER,
+                tour_id INTEGER,
+                FOREIGN KEY (venue_id) REFERENCES venues(id) ON DELETE CASCADE,
+                FOREIGN KEY (tour_id) REFERENCES tours(id) ON DELETE CASCADE
             )
         ''')
-        """always commit changes after executing a SQL statement"""
         CONN.commit()
     
     #Class method to drop the events table from the DB (useful for testing or resetting.)
@@ -153,4 +154,15 @@ class Event:
         event = cls(name, date, location, description, venue_id) #create an event object
         event.save() #save the event to the DB 
         return event #return the saved object
-    
+
+    def add_artist(self, artist):
+        if artist not in self.artists:
+            self.artists.append(artist)
+        else:
+            raise ValueError("Artist already assigned to this event.")
+
+    def remove_artist(self, artist):
+        if artist in self.artists:
+            self.artists.remove(artist)
+        else:
+            raise ValueError("Artist not found in this event.")
